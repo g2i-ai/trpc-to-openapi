@@ -136,7 +136,20 @@ export const getRequestBodyObject = (
     mask[pathParameter] = true;
   });
   const o = schema.meta();
-  const dedupedSchema = schema.omit(mask).meta({
+  let dedupedSchema;
+  try {
+    dedupedSchema = schema.omit(mask);
+  } catch {
+    // Zod 4.3+ throws on .omit() for schemas with refinements — rebuild from shape
+    const filteredShape: Record<string, z.ZodType> = {};
+    for (const [key, value] of Object.entries(schema.shape)) {
+      if (!mask[key]) {
+        filteredShape[key] = value as z.ZodType;
+      }
+    }
+    dedupedSchema = z.object(filteredShape);
+  }
+  dedupedSchema = dedupedSchema.meta({
     ...(o?.title ? { title: o?.title } : {}),
     ...(o?.description ? { description: o?.description } : {}),
     ...(o?.examples ? { examples: o?.examples } : {}),
