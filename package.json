@@ -49,6 +49,8 @@
     "openapi3-ts": "4.4.0"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
     "@trpc/client": "^11.1.0",
     "@types/aws-lambda": "^8.10.115",
     "@types/co-body": "^6.1.0",
