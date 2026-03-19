@@ -46,6 +46,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run changeset version
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: pnpm changeset version
 
       - name: Get version from package.json
