@@ -67,6 +67,30 @@ jobs:
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check for existing release PR or tag
+        if: steps.changes.outputs.has_changes == 'true' && !inputs.dry-run
+        id: existing-pr
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BRANCH="release/v${VERSION}"
+
+          # Skip if tag already exists (version already released)
+          if git ls-remote --tags origin "refs/tags/v${VERSION}" | grep -q .; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${VERSION} already exists. Skipping."
+            exit 0
+          fi
+
+          EXISTING=$(gh pr list --head "$BRANCH" --base master --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Release PR #$EXISTING already exists for $BRANCH. Skipping."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Dry run summary
         if: inputs.dry-run && steps.changes.outputs.has_changes == 'true'
         run: |
@@ -77,7 +101,7 @@ jobs:
           git diff --name-only >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create release branch and PR
-        if: "!inputs.dry-run && steps.changes.outputs.has_changes == 'true'"
+        if: "!inputs.dry-run && steps.changes.outputs.has_changes == 'true' && steps.existing-pr.outputs.skip != 'true'"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
