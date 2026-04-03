@@ -37,6 +37,7 @@ export type OpenApiMeta<TMeta = TRPCMeta> = TMeta & {
     requestHeaders?: ZodObject;
     responseHeaders?: ZodObject;
     successDescription?: string;
+    successStatus?: number;
     errorResponses?: number[] | Record<number, string>;
   };
 };

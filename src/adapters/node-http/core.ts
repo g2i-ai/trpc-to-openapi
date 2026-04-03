@@ -10,6 +10,7 @@ import { NodeHTTPRequest } from '../../types';
 import { generateOpenApiDocument } from '../../generator';
 import {
   OpenApiErrorResponse,
+  OpenApiMeta,
   OpenApiMethod,
   OpenApiProcedure,
   OpenApiResponse,
@@ -187,7 +188,9 @@ export const createOpenApiNodeHttpHandler = <
       });
 
       const isVoidOutput = outputParser ? instanceofZodTypeLikeVoid(unwrapZodType(outputParser, true)) : false;
-      const statusCode = meta?.status ?? (isVoidOutput ? 204 : 200);
+      const openApiMeta = procedure.procedure._def.meta as OpenApiMeta | undefined;
+      const defaultStatus = isVoidOutput ? 204 : (openApiMeta?.openapi?.successStatus ?? 200);
+      const statusCode = meta?.status ?? defaultStatus;
       const headers = meta?.headers ?? {};
       const body: OpenApiSuccessResponse<typeof data> = data;
       sendResponse(statusCode, headers, body);

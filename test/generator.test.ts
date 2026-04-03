@@ -1509,6 +1509,45 @@ describe('generator', () => {
     }
   });
 
+  test('with successStatus', () => {
+    const appRouter = t.router({
+      createUser: t.procedure
+        .meta({ openapi: { method: 'POST', path: '/users', successStatus: 201 } })
+        .input(z.object({ name: z.string() }))
+        .output(z.object({ id: z.string(), name: z.string() }))
+        .mutation(({ input }) => ({ id: 'user-id', name: input.name })),
+    });
+
+    const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
+
+    expect(openApiDocument.paths!['/users']!.post!.responses?.[201]).toMatchInlineSnapshot(`
+      Object {
+        "content": Object {
+          "application/json": Object {
+            "schema": Object {
+              "additionalProperties": false,
+              "properties": Object {
+                "id": Object {
+                  "type": "string",
+                },
+                "name": Object {
+                  "type": "string",
+                },
+              },
+              "required": Array [
+                "id",
+                "name",
+              ],
+              "type": "object",
+            },
+          },
+        },
+        "description": "Successful response",
+      }
+    `);
+    expect(openApiDocument.paths!['/users']!.post!.responses?.[200]).toBeUndefined();
+  });
+
   test('with null', () => {
     const appRouter = t.router({
       null: t.procedure

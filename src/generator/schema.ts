@@ -240,6 +240,7 @@ export const getResponsesObject = (
   hasInputs: boolean,
   successDescription?: string,
   errorResponses?: number[] | Record<number, string>,
+  successStatus?: number,
 ): ZodOpenApiResponsesObject => ({
   ...(instanceofZodTypeLikeVoid(unwrapZodType(schema, true))
     ? {
@@ -249,7 +250,7 @@ export const getResponsesObject = (
         },
       }
     : {
-        200: {
+        [successStatus ?? 200]: {
           description: successDescription ?? 'Successful response',
           headers: headers,
           content: {

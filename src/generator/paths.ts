@@ -64,6 +64,7 @@ export const getOpenApiPathsObject = <TMeta = Record<string, unknown>>(
         requestHeaders,
         responseHeaders,
         successDescription,
+        successStatus,
         errorResponses,
         protect = true,
       } = meta.openapi;
@@ -165,6 +166,7 @@ export const getOpenApiPathsObject = <TMeta = Record<string, unknown>>(
         hasInputs(inputParser),
         successDescription,
         errorResponses,
+        successStatus,
       );
 
       const security = protect ? securitySchemeNames.map((name) => ({ [name]: [] })) : undefined;

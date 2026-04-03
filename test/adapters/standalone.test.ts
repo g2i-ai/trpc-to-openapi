@@ -440,6 +440,33 @@ describe('standalone adapter', () => {
     expect(onErrorMock).toHaveBeenCalledTimes(0);
   });
 
+  test('with successStatus', async () => {
+    const appRouter = t.router({
+      createUser: t.procedure
+        .meta({ openapi: { method: 'POST', path: '/users', successStatus: 201 } })
+        .input(z.object({ name: z.string() }))
+        .output(z.object({ id: z.string(), name: z.string() }))
+        .mutation(({ input }) => ({ id: 'user-id', name: input.name })),
+    });
+
+    const { url } = createHttpServerWithRouter({
+      router: appRouter,
+    });
+
+    const res = await fetch(`${url}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Alice' }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(body).toEqual({ id: 'user-id', name: 'Alice' });
+    expect(createContextMock).toHaveBeenCalledTimes(1);
+    expect(responseMetaMock).toHaveBeenCalledTimes(1);
+    expect(onErrorMock).toHaveBeenCalledTimes(0);
+  });
+
   test('with createContext', async () => {
     interface Context {
       id: 1234567890;
