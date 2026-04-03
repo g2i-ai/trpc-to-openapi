@@ -446,7 +446,7 @@ describe('fetch adapter', () => {
       // do nothing
     }
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(204);
     expect(createContextMock).toHaveBeenCalledTimes(1);
     expect(responseMetaMock).toHaveBeenCalledTimes(1);
     expect(onErrorMock).toHaveBeenCalledTimes(0);

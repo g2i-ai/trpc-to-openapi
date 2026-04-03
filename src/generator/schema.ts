@@ -244,7 +244,7 @@ export const getResponsesObject = (
   ...(instanceofZodTypeLikeVoid(schema)
     ? {
         204: {
-          description: 'No content',
+          description: successDescription ?? 'No content',
           headers: headers,
         },
       }

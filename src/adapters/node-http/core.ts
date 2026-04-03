@@ -114,7 +114,7 @@ export const createOpenApiNodeHttpHandler = <
         });
       }
 
-      const { inputParser } = getInputOutputParsers(procedure.procedure);
+      const { inputParser, outputParser } = getInputOutputParsers(procedure.procedure);
       const unwrappedSchema = unwrapZodType(inputParser, true);
 
       // input should stay undefined if z.void()
@@ -182,7 +182,8 @@ export const createOpenApiNodeHttpHandler = <
         eagerGeneration: true,
       });
 
-      const statusCode = meta?.status ?? 200;
+      const isVoidOutput = outputParser ? instanceofZodTypeLikeVoid(unwrapZodType(outputParser, true)) : false;
+      const statusCode = meta?.status ?? (isVoidOutput ? 204 : 200);
       const headers = meta?.headers ?? {};
       const body: OpenApiSuccessResponse<typeof data> = data;
       sendResponse(statusCode, headers, body);
