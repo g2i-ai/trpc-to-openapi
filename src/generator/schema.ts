@@ -241,19 +241,24 @@ export const getResponsesObject = (
   successDescription?: string,
   errorResponses?: number[] | Record<number, string>,
 ): ZodOpenApiResponsesObject => ({
-  200: {
-    description: successDescription ?? 'Successful response',
-    headers: headers,
-    content: {
-      'application/json': {
-        schema: instanceofZodTypeKind(schema, 'void')
-          ? {}
-          : instanceofZodTypeKind(schema, 'never') || instanceofZodTypeKind(schema, 'undefined')
-            ? { not: {} }
-            : schema,
-      },
-    },
-  },
+  ...(instanceofZodTypeLikeVoid(unwrapZodType(schema, true))
+    ? {
+        204: {
+          description: successDescription ?? 'No content',
+          headers: headers,
+        },
+      }
+    : {
+        200: {
+          description: successDescription ?? 'Successful response',
+          headers: headers,
+          content: {
+            'application/json': {
+              schema: schema,
+            },
+          },
+        },
+      }),
   ...(errorResponses !== undefined
     ? Object.fromEntries(
         Array.isArray(errorResponses)

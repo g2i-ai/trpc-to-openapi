@@ -64,13 +64,17 @@ export const createOpenApiNodeHttpHandler = <
   return async (req: TRequest, res: TResponse, next?: OpenApiNextFunction) => {
     const sendResponse = (statusCode: number, headers: HTTPHeaders, body: OpenApiResponse) => {
       res.statusCode = statusCode;
-      res.setHeader('Content-Type', 'application/json');
       for (const [key, value] of Object.entries(headers)) {
         if (typeof value !== 'undefined') {
           res.setHeader(key, value as string);
         }
       }
-      res.end(JSON.stringify(body));
+      if (statusCode === 204) {
+        res.end();
+      } else {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(body));
+      }
     };
 
     const method = req.method as OpenApiMethod | 'HEAD';
@@ -114,7 +118,7 @@ export const createOpenApiNodeHttpHandler = <
         });
       }
 
-      const { inputParser } = getInputOutputParsers(procedure.procedure);
+      const { inputParser, outputParser } = getInputOutputParsers(procedure.procedure);
       const unwrappedSchema = unwrapZodType(inputParser, true);
 
       // input should stay undefined if z.void()
@@ -182,7 +186,8 @@ export const createOpenApiNodeHttpHandler = <
         eagerGeneration: true,
       });
 
-      const statusCode = meta?.status ?? 200;
+      const isVoidOutput = outputParser ? instanceofZodTypeLikeVoid(unwrapZodType(outputParser, true)) : false;
+      const statusCode = meta?.status ?? (isVoidOutput ? 204 : 200);
       const headers = meta?.headers ?? {};
       const body: OpenApiSuccessResponse<typeof data> = data;
       sendResponse(statusCode, headers, body);

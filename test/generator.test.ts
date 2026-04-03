@@ -846,13 +846,8 @@ describe('generator', () => {
                 },
               ],
               "responses": Object {
-                "200": Object {
-                  "content": Object {
-                    "application/json": Object {
-                      "schema": Object {},
-                    },
-                  },
-                  "description": "Successful response",
+                "204": Object {
+                  "description": "No content",
                 },
                 "400": Object {
                   "content": Object {
@@ -1472,14 +1467,9 @@ describe('generator', () => {
       const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
 
       expect(openApiDocument.paths!['/void']!.get!.parameters).toEqual(undefined);
-      expect(openApiDocument.paths!['/void']!.get!.responses?.[200]).toMatchInlineSnapshot(`
+      expect(openApiDocument.paths!['/void']!.get!.responses?.[204]).toMatchInlineSnapshot(`
         Object {
-          "content": Object {
-            "application/json": Object {
-              "schema": Object {},
-            },
-          },
-          "description": "Successful response",
+          "description": "No content",
         }
       `);
     }
@@ -1494,14 +1484,9 @@ describe('generator', () => {
       const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
 
       expect(openApiDocument.paths!['/void']!.get!.parameters).toEqual(undefined);
-      expect(openApiDocument.paths!['/void']!.get!.responses?.[200]).toMatchInlineSnapshot(`
+      expect(openApiDocument.paths!['/void']!.get!.responses?.[204]).toMatchInlineSnapshot(`
         Object {
-          "content": Object {
-            "application/json": Object {
-              "schema": Object {},
-            },
-          },
-          "description": "Successful response",
+          "description": "No content",
         }
       `);
     }
@@ -1516,16 +1501,11 @@ describe('generator', () => {
       const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
 
       expect(openApiDocument.paths!['/void']!.post!.requestBody).toMatchInlineSnapshot(`undefined`);
-      expect(openApiDocument.paths!['/void']!.post!.responses?.[200]).toMatchInlineSnapshot(`
-              Object {
-                "content": Object {
-                  "application/json": Object {
-                    "schema": Object {},
-                  },
-                },
-                "description": "Successful response",
-              }
-          `);
+      expect(openApiDocument.paths!['/void']!.post!.responses?.[204]).toMatchInlineSnapshot(`
+        Object {
+          "description": "No content",
+        }
+      `);
     }
   });
 
@@ -1567,16 +1547,9 @@ describe('generator', () => {
     expect(openApiDocument.paths!['/undefined']!.post!.requestBody).toMatchInlineSnapshot(
       `undefined`,
     );
-    expect(openApiDocument.paths!['/undefined']!.post!.responses?.[200]).toMatchInlineSnapshot(`
+    expect(openApiDocument.paths!['/undefined']!.post!.responses?.[204]).toMatchInlineSnapshot(`
       Object {
-        "content": Object {
-          "application/json": Object {
-            "schema": Object {
-              "not": Object {},
-            },
-          },
-        },
-        "description": "Successful response",
+        "description": "No content",
       }
     `);
   });
@@ -1625,16 +1598,9 @@ describe('generator', () => {
     const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
 
     expect(openApiDocument.paths!['/never']!.post!.requestBody).toMatchInlineSnapshot(`undefined`);
-    expect(openApiDocument.paths!['/never']!.post!.responses?.[200]).toMatchInlineSnapshot(`
+    expect(openApiDocument.paths!['/never']!.post!.responses?.[204]).toMatchInlineSnapshot(`
       Object {
-        "content": Object {
-          "application/json": Object {
-            "schema": Object {
-              "not": Object {},
-            },
-          },
-        },
-        "description": "Successful response",
+        "description": "No content",
       }
     `);
   });
