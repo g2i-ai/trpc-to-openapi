@@ -189,7 +189,7 @@ export const createOpenApiNodeHttpHandler = <
 
       const isVoidOutput = outputParser ? instanceofZodTypeLikeVoid(unwrapZodType(outputParser, true)) : false;
       const openApiMeta = procedure.procedure._def.meta as OpenApiMeta | undefined;
-      const defaultStatus = isVoidOutput ? 204 : (openApiMeta?.openapi?.successStatus ?? 200);
+      const defaultStatus = openApiMeta?.openapi?.successStatus ?? (isVoidOutput ? 204 : 200);
       const statusCode = meta?.status ?? defaultStatus;
       const headers = meta?.headers ?? {};
       const body: OpenApiSuccessResponse<typeof data> = data;

@@ -244,7 +244,7 @@ export const getResponsesObject = (
 ): ZodOpenApiResponsesObject => ({
   ...(instanceofZodTypeLikeVoid(unwrapZodType(schema, true))
     ? {
-        204: {
+        [successStatus ?? 204]: {
           description: successDescription ?? 'No content',
           headers: headers,
         },
