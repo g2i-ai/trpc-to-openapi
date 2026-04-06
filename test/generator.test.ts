@@ -1548,6 +1548,25 @@ describe('generator', () => {
     expect(openApiDocument.paths!['/users']!.post!.responses?.[200]).toBeUndefined();
   });
 
+  test('with successStatus and void output', () => {
+    const appRouter = t.router({
+      deleteUser: t.procedure
+        .meta({ openapi: { method: 'DELETE', path: '/users/{id}', successStatus: 200 } })
+        .input(z.object({ id: z.string() }))
+        .output(z.void())
+        .mutation(() => undefined),
+    });
+
+    const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
+
+    expect(openApiDocument.paths!['/users/{id}']!.delete!.responses?.[200]).toMatchInlineSnapshot(`
+      Object {
+        "description": "No content",
+      }
+    `);
+    expect(openApiDocument.paths!['/users/{id}']!.delete!.responses?.[204]).toBeUndefined();
+  });
+
   test('with null', () => {
     const appRouter = t.router({
       null: t.procedure
