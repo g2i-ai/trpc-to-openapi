@@ -63,6 +63,8 @@ export const getOpenApiPathsObject = <TMeta = Record<string, unknown>>(
         tags,
         requestHeaders,
         responseHeaders,
+        requestQuery,
+        responseSchema,
         successDescription,
         successStatus,
         errorResponses,
@@ -134,11 +136,13 @@ export const getOpenApiPathsObject = <TMeta = Record<string, unknown>>(
         }
 
         if (acceptsRequestBody(method)) {
+          const queryKeys = requestQuery ? Object.keys(requestQuery.shape) : [];
           requestData.requestBody = getRequestBodyObject(
             inputSchema,
             isInputRequired,
             pathParameters,
             contentTypes,
+            queryKeys,
           );
           requestData.requestParams = getParameterObjects(
             inputSchema,
@@ -146,6 +150,7 @@ export const getOpenApiPathsObject = <TMeta = Record<string, unknown>>(
             pathParameters,
             requestHeaders,
             'path',
+            requestQuery,
           );
         } else {
           requestData.requestParams = getParameterObjects(
@@ -159,7 +164,7 @@ export const getOpenApiPathsObject = <TMeta = Record<string, unknown>>(
       }
 
       const responses = getResponsesObject(
-        outputParser,
+        responseSchema ?? outputParser,
         httpMethod,
         responseHeaders,
         protect,

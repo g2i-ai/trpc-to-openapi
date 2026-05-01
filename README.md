@@ -192,6 +192,14 @@ const body = await res.json(); /* { greeting: 'Hello Lily!' } */
 
 Any custom headers can be specified in the `meta.openapi.requestHeaders` and `meta.openapi.responseHeaders` zod object schema, these headers will not be validated. Please consider using [Authorization](#authorization) for first-class OpenAPI auth/security support.
 
+### Relocating body fields to query parameters
+
+For methods that accept a request body (`POST`, `PUT`, `PATCH`), the framework places every non-path input field into the request body by default. To declare specific input fields as query parameters instead, list them in `meta.openapi.requestQuery` as a zod object schema. Listed keys are removed from the emitted `requestBody` and emitted as `parameters[in: query]`. The same fields must remain on the procedure's `.input()` so they continue to be validated at runtime.
+
+### Overriding the response schema
+
+The OpenAPI response body is derived from the procedure's `.output()` schema by default. To publish a different shape — for example, when `.output(z.unknown())` is used to keep a runtime value untouched — set `meta.openapi.responseSchema` to the zod schema you want documented. `.output()` continues to drive runtime validation; `responseSchema` only affects the generated OpenAPI document.
+
 ## HTTP Responses
 
 Status codes will be `200` by default for any successful requests. In the case of an error, the status code will be derived from the thrown `TRPCError` or fallback to `500`.
@@ -383,6 +391,8 @@ Please see [full typings here](src/types.ts).
 | `tags`               | `string[]`                              | A list of tags used for logical grouping of endpoints in the OpenAPI document.                                                 | `false`  | `undefined`             |
 | `requestHeaders`     | `AnyZodObject`                          | A zod object schema describing any custom headers to add to the request for this endpoint in the OpenAPI document.             | `false`  | `undefined`             |
 | `responseHeaders`    | `AnyZodObject`                          | A zod object schema describing any custom headers to add to the response for this endpoint in the OpenAPI document.            | `false`  | `undefined`             |
+| `requestQuery`       | `AnyZodObject`                          | A zod object schema listing input fields that should be emitted as query parameters instead of request body fields. Only applies to methods that accept a request body (`POST`, `PUT`, `PATCH`). Listed keys are subtracted from the emitted `requestBody`. | `false`  | `undefined`             |
+| `responseSchema`     | `ZodType`                               | A zod schema used in place of `.output()` when emitting the success response body in the OpenAPI document. `.output()` continues to drive runtime validation. | `false`  | `undefined`             |
 | `successDescription` | `string`                                | A string to use as the description for a successful response.                                                                  | `false`  | `'Successful response'` |
 | `errorResponses`     | `number[] \| { [key: number]: string }` | A list of error response codes or an object of response codes and their description to add to the responses for this endpoint. | `false`  | `undefined`             |
 | `contentTypes`       | `OpenApiContentType[]`                  | A set of content types specified as accepted in the OpenAPI document.                                                          | `false`  | `['application/json']`  |

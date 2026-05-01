@@ -109,14 +109,19 @@ export const createOpenApiNodeHttpHandler = <
 
       const contentType = getContentType(req);
       const useBody = acceptsRequestBody(method);
+      const openApiMeta = procedure.procedure._def.meta as OpenApiMeta | undefined;
+      const requestQuerySchema = openApiMeta?.openapi?.requestQuery;
+      const hasRequestQuery = !!requestQuerySchema;
 
       if (useBody && !contentType?.startsWith('application/json')) {
-        throw new TRPCError({
-          code: 'UNSUPPORTED_MEDIA_TYPE',
-          message: contentType
-            ? `Unsupported content-type "${contentType}`
-            : 'Missing content-type header',
-        });
+        if (!hasRequestQuery || contentType) {
+          throw new TRPCError({
+            code: 'UNSUPPORTED_MEDIA_TYPE',
+            message: contentType
+              ? `Unsupported content-type "${contentType}`
+              : 'Missing content-type header',
+          });
+        }
       }
 
       const { inputParser, outputParser } = getInputOutputParsers(procedure.procedure);
@@ -124,35 +129,62 @@ export const createOpenApiNodeHttpHandler = <
 
       // input should stay undefined if z.void()
       if (!instanceofZodTypeLikeVoid(unwrappedSchema)) {
-        input = {
-          ...(useBody ? await getBody(req, maxBodySize) : getQuery(req, url)),
-          ...pathInput,
-        };
+        if (useBody) {
+          const bodyInput = contentType ? await getBody(req, maxBodySize) : undefined;
+          let requestQueryInput: Record<string, unknown> = {};
+          if (hasRequestQuery) {
+            const allQuery = getQuery(req, url);
+            const declaredKeys = Object.keys(requestQuerySchema!.shape);
+            for (const key of declaredKeys) {
+              if (key in allQuery) {
+                requestQueryInput[key] = allQuery[key];
+              }
+            }
+          }
+          input = {
+            ...bodyInput,
+            ...requestQueryInput,
+            ...pathInput,
+          };
+        } else {
+          input = {
+            ...getQuery(req, url),
+            ...pathInput,
+          };
+        }
       }
 
       // if supported, coerce all string values to correct types
       if (zodSupportsCoerce && instanceofZodTypeObject(unwrappedSchema)) {
-        if (!useBody) {
-          for (const [key, shape] of Object.entries(unwrappedSchema.shape)) {
-            let isArray = false;
+        const queryParamKeys = !useBody
+          ? Object.keys(unwrappedSchema.shape)
+          : hasRequestQuery
+            ? Object.keys(requestQuerySchema!.shape)
+            : [];
 
-            // Check if it's a direct array
-            if (shape instanceof ZodArray) {
+        for (const key of queryParamKeys) {
+          const shape = unwrappedSchema.shape[key];
+          if (!shape) continue;
+
+          let isArray = false;
+
+          // Check if it's a direct array
+          if (shape instanceof ZodArray) {
+            isArray = true;
+          }
+          // Check if it's an optional array
+          else if (instanceofZodTypeOptional(shape)) {
+            const innerType = (shape as any).unwrap();
+            if (innerType instanceof ZodArray) {
               isArray = true;
             }
-            // Check if it's an optional array
-            else if (instanceofZodTypeOptional(shape)) {
-              const innerType = (shape as any).unwrap();
-              if (innerType instanceof ZodArray) {
-                isArray = true;
-              }
-            }
+          }
 
-            if (isArray && input[key] !== undefined && !Array.isArray(input[key])) {
-              input[key] = [input[key]];
-            }
+          if (isArray && input[key] !== undefined && !Array.isArray(input[key])) {
+            input[key] = [input[key]];
           }
         }
+
         coerceSchema(unwrappedSchema);
       }
 
@@ -188,7 +220,6 @@ export const createOpenApiNodeHttpHandler = <
       });
 
       const isVoidOutput = outputParser ? instanceofZodTypeLikeVoid(unwrapZodType(outputParser, true)) : false;
-      const openApiMeta = procedure.procedure._def.meta as OpenApiMeta | undefined;
       const defaultStatus = openApiMeta?.openapi?.successStatus ?? (isVoidOutput ? 204 : 200);
       const statusCode = meta?.status ?? defaultStatus;
       const headers = meta?.headers ?? {};
