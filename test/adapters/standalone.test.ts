@@ -1366,4 +1366,114 @@ describe('standalone adapter', () => {
     expect(responseMetaMock).toHaveBeenCalledTimes(1);
     expect(onErrorMock).toHaveBeenCalledTimes(1);
   });
+
+  test('with requestQuery - split input between query and body', async () => {
+    const appRouter = t.router({
+      createUser: t.procedure
+        .meta({
+          openapi: {
+            method: 'POST',
+            path: '/users',
+            requestQuery: z.object({ org: z.string() }),
+          },
+        })
+        .input(z.object({ org: z.string(), name: z.string() }))
+        .output(z.object({ org: z.string(), name: z.string() }))
+        .mutation(({ input }) => ({ org: input.org, name: input.name })),
+    });
+
+    const { url } = createHttpServerWithRouter({ router: appRouter });
+
+    const res = await fetch(`${url}/users?org=acme`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Lily' }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ org: 'acme', name: 'Lily' });
+  });
+
+  test('with requestQuery - all fields in query, no body', async () => {
+    const appRouter = t.router({
+      listUsers: t.procedure
+        .meta({
+          openapi: {
+            method: 'POST',
+            path: '/users/search',
+            requestQuery: z.object({ org: z.string() }),
+          },
+        })
+        .input(z.object({ org: z.string() }))
+        .output(z.object({ org: z.string() }))
+        .mutation(({ input }) => ({ org: input.org })),
+    });
+
+    const { url } = createHttpServerWithRouter({ router: appRouter });
+
+    const res = await fetch(`${url}/users/search?org=acme`, {
+      method: 'POST',
+    });
+    const body = await res.json();
+
+    expect(body).toEqual({ org: 'acme' });
+    expect(res.status).toBe(200);
+  });
+
+  test('with requestQuery - combined with path parameters', async () => {
+    const appRouter = t.router({
+      updateItem: t.procedure
+        .meta({
+          openapi: {
+            method: 'PUT',
+            path: '/items/{id}',
+            requestQuery: z.object({ version: z.coerce.number() }),
+          },
+        })
+        .input(z.object({ id: z.string(), version: z.number(), name: z.string() }))
+        .output(z.object({ id: z.string(), version: z.number(), name: z.string() }))
+        .mutation(({ input }) => input),
+    });
+
+    const { url } = createHttpServerWithRouter({ router: appRouter });
+
+    const res = await fetch(`${url}/items/abc?version=3`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Widget' }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ id: 'abc', version: 3, name: 'Widget' });
+  });
+
+  test('with requestQuery - invalid content-type still rejected', async () => {
+    const appRouter = t.router({
+      createUser: t.procedure
+        .meta({
+          openapi: {
+            method: 'POST',
+            path: '/users',
+            requestQuery: z.object({ org: z.string() }),
+          },
+        })
+        .input(z.object({ org: z.string(), name: z.string() }))
+        .output(z.object({ org: z.string(), name: z.string() }))
+        .mutation(({ input }) => ({ org: input.org, name: input.name })),
+    });
+
+    const { url } = createHttpServerWithRouter({ router: appRouter });
+
+    const res = await fetch(`${url}/users?org=acme`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: 'not json',
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(415);
+    expect(body).toEqual(expect.objectContaining({ code: 'UNSUPPORTED_MEDIA_TYPE' }));
+  });
 });
