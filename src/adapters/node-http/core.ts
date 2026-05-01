@@ -131,9 +131,19 @@ export const createOpenApiNodeHttpHandler = <
       if (!instanceofZodTypeLikeVoid(unwrappedSchema)) {
         if (useBody) {
           const bodyInput = contentType ? await getBody(req, maxBodySize) : undefined;
+          let requestQueryInput: Record<string, unknown> = {};
+          if (hasRequestQuery) {
+            const allQuery = getQuery(req, url);
+            const declaredKeys = Object.keys(requestQuerySchema!.shape);
+            for (const key of declaredKeys) {
+              if (key in allQuery) {
+                requestQueryInput[key] = allQuery[key];
+              }
+            }
+          }
           input = {
-            ...(hasRequestQuery ? getQuery(req, url) : {}),
             ...bodyInput,
+            ...requestQueryInput,
             ...pathInput,
           };
         } else {

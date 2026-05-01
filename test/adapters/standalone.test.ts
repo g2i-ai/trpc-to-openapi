@@ -1476,4 +1476,60 @@ describe('standalone adapter', () => {
     expect(res.status).toBe(415);
     expect(body).toEqual(expect.objectContaining({ code: 'UNSUPPORTED_MEDIA_TYPE' }));
   });
+
+  test('with requestQuery - query value wins over duplicate body field', async () => {
+    const appRouter = t.router({
+      createUser: t.procedure
+        .meta({
+          openapi: {
+            method: 'POST',
+            path: '/users',
+            requestQuery: z.object({ org: z.string() }),
+          },
+        })
+        .input(z.object({ org: z.string(), name: z.string() }))
+        .output(z.object({ org: z.string(), name: z.string() }))
+        .mutation(({ input }) => ({ org: input.org, name: input.name })),
+    });
+
+    const { url } = createHttpServerWithRouter({ router: appRouter });
+
+    const res = await fetch(`${url}/users?org=from-query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ org: 'from-body', name: 'Lily' }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ org: 'from-query', name: 'Lily' });
+  });
+
+  test('with requestQuery - extra query params outside requestQuery are ignored', async () => {
+    const appRouter = t.router({
+      createUser: t.procedure
+        .meta({
+          openapi: {
+            method: 'POST',
+            path: '/users',
+            requestQuery: z.object({ org: z.string() }),
+          },
+        })
+        .input(z.object({ org: z.string(), name: z.string() }))
+        .output(z.object({ org: z.string(), name: z.string() }))
+        .mutation(({ input }) => ({ org: input.org, name: input.name })),
+    });
+
+    const { url } = createHttpServerWithRouter({ router: appRouter });
+
+    const res = await fetch(`${url}/users?org=acme&name=should-be-ignored`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Lily' }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ org: 'acme', name: 'Lily' });
+  });
 });
