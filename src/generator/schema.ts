@@ -164,8 +164,7 @@ export const getRequestBodyObject = (
     ...(o?.description ? { description: o?.description } : {}),
     ...(o?.examples ? { examples: o?.examples } : {}),
   });
-  // if all keys are path parameters
-  if (pathParameters.length > 0 && Object.keys(dedupedSchema.shape).length === 0) {
+  if ((pathParameters.length > 0 || queryKeys.length > 0) && Object.keys(dedupedSchema.shape).length === 0) {
     return undefined;
   }
 
