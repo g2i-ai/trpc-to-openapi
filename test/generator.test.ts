@@ -3428,6 +3428,136 @@ describe('generator', () => {
     `);
   });
 
+  test('with requestQuery on POST', () => {
+    const appRouter = t.router({
+      updateItem: t.procedure
+        .meta({
+          openapi: {
+            method: 'POST',
+            path: '/items/{id}',
+            requestQuery: z.object({
+              mode: z.string(),
+              version: z.string().optional(),
+            }),
+          },
+        })
+        .input(
+          z.object({
+            id: z.string(),
+            mode: z.string(),
+            version: z.string().optional(),
+            data: z.string(),
+          }),
+        )
+        .output(z.object({ updated: z.boolean() }))
+        .mutation(() => ({ updated: true })),
+    });
+
+    const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
+
+    expect(openApiDocument.paths!['/items/{id}']!.post!.parameters).toMatchInlineSnapshot(`
+      Array [
+        Object {
+          "in": "path",
+          "name": "id",
+          "required": true,
+          "schema": Object {
+            "type": "string",
+          },
+        },
+        Object {
+          "in": "query",
+          "name": "mode",
+          "required": true,
+          "schema": Object {
+            "type": "string",
+          },
+        },
+        Object {
+          "in": "query",
+          "name": "version",
+          "schema": Object {
+            "type": "string",
+          },
+        },
+      ]
+    `);
+    expect(openApiDocument.paths!['/items/{id}']!.post!.requestBody).toMatchInlineSnapshot(`
+      Object {
+        "content": Object {
+          "application/json": Object {
+            "schema": Object {
+              "properties": Object {
+                "data": Object {
+                  "type": "string",
+                },
+              },
+              "required": Array [
+                "data",
+              ],
+              "type": "object",
+            },
+          },
+        },
+        "required": true,
+      }
+    `);
+  });
+
+  test('with responseSchema override', () => {
+    const appRouter = t.router({
+      getStream: t.procedure
+        .meta({
+          openapi: {
+            method: 'GET',
+            path: '/stream',
+            responseSchema: z.object({
+              items: z.array(z.object({ id: z.string() })),
+            }),
+          },
+        })
+        .input(z.void())
+        .output(z.unknown())
+        .query(() => ({})),
+    });
+
+    const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
+
+    expect(openApiDocument.paths!['/stream']!.get!.responses?.[200]).toMatchInlineSnapshot(`
+      Object {
+        "content": Object {
+          "application/json": Object {
+            "schema": Object {
+              "additionalProperties": false,
+              "properties": Object {
+                "items": Object {
+                  "items": Object {
+                    "additionalProperties": false,
+                    "properties": Object {
+                      "id": Object {
+                        "type": "string",
+                      },
+                    },
+                    "required": Array [
+                      "id",
+                    ],
+                    "type": "object",
+                  },
+                  "type": "array",
+                },
+              },
+              "required": Array [
+                "items",
+              ],
+              "type": "object",
+            },
+          },
+        },
+        "description": "Successful response",
+      }
+    `);
+  });
+
   test('with filter option', () => {
     const appRouter = t.router({
       publicProc: t.procedure

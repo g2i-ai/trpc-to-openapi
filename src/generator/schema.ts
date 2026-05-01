@@ -32,6 +32,7 @@ export const getParameterObjects = (
   pathParameters: string[],
   headersSchema: ZodObject | undefined,
   inType: 'all' | 'path' | 'query',
+  querySchema?: ZodObject,
 ): ZodOpenApiParameters | undefined => {
   const shape = schema.shape;
   const shapeKeys = Object.keys(shape);
@@ -121,6 +122,11 @@ export const getParameterObjects = (
     query: z.object(query),
   };
 
+  if (querySchema) {
+    const existingQuery = res.query as z.ZodObject<z.ZodRawShape>;
+    res.query = z.object({ ...existingQuery.shape, ...querySchema.shape });
+  }
+
   return res;
 };
 
@@ -129,11 +135,15 @@ export const getRequestBodyObject = (
   required: boolean,
   pathParameters: string[],
   contentTypes: OpenApiContentType[],
+  queryKeys: string[] = [],
 ): ZodOpenApiRequestBodyObject | undefined => {
   // remove path parameters
   const mask: Record<string, true> = {};
   pathParameters.forEach((pathParameter) => {
     mask[pathParameter] = true;
+  });
+  queryKeys.forEach((key) => {
+    mask[key] = true;
   });
   const o = schema.meta();
   let dedupedSchema;
@@ -233,7 +243,7 @@ export const errorResponseFromMessage = (status: number, message: string) =>
   errorResponseObject(HTTP_STATUS_TRPC_ERROR_CODE[status], message);
 
 export const getResponsesObject = (
-  schema: ZodObject,
+  schema: z.ZodType,
   httpMethod: HttpMethods,
   headers: ZodObject | undefined,
   isProtected: boolean,
