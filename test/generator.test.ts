@@ -2255,6 +2255,77 @@ describe('generator', () => {
     `);
   });
 
+  test('with lazy optional and required fields', () => {
+    const appRouter = t.router({
+      lazyParams: t.procedure
+        .meta({ openapi: { method: 'GET', path: '/lazy-params' } })
+        .input(
+          z.object({
+            requiredField: z.lazy(() => z.string()),
+            optionalWrappingLazy: z.lazy(() => z.string()).optional(),
+            lazyWrappingOptional: z.lazy(() => z.string().optional()),
+          }),
+        )
+        .output(z.null())
+        .query(() => null),
+    });
+
+    const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
+
+    const params = openApiDocument.paths!['/lazy-params']!.get!.parameters as any[];
+    expect(params).toHaveLength(3);
+
+    const required = params.find((p: any) => p.name === 'requiredField');
+    expect(required).toMatchObject({ required: true, schema: { type: 'string' } });
+
+    const optA = params.find((p: any) => p.name === 'optionalWrappingLazy');
+    expect(optA!.required).toBeFalsy();
+    expect(optA).toMatchObject({ schema: { type: 'string' } });
+
+    const optB = params.find((p: any) => p.name === 'lazyWrappingOptional');
+    expect(optB!.required).toBeFalsy();
+    expect(optB).toMatchObject({ schema: { type: 'string' } });
+  });
+
+  test('with lazy in POST body preserves required/optional', () => {
+    const appRouter = t.router({
+      lazyPost: t.procedure
+        .meta({ openapi: { method: 'POST', path: '/lazy-post' } })
+        .input(
+          z.object({
+            globalClusterIdentifier: z.lazy(() => z.string()),
+            sourceDbClusterIdentifier: z.lazy(() => z.string()).optional(),
+            auth: z.lazy(() => z.array(z.object({ secretArn: z.string() }))).optional(),
+          }),
+        )
+        .output(z.null())
+        .mutation(() => null),
+    });
+
+    const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
+    const body = openApiDocument.paths!['/lazy-post']!.post!.requestBody as any;
+    const schema = body.content['application/json'].schema;
+
+    expect(schema.required).toEqual(['globalClusterIdentifier']);
+    expect(schema.properties.globalClusterIdentifier).toEqual({ type: 'string' });
+    expect(schema.properties.sourceDbClusterIdentifier).toEqual({ type: 'string' });
+    expect(schema.properties.auth).toMatchObject({ type: 'array' });
+  });
+
+  test('with lazy wrapping default', () => {
+    const appRouter = t.router({
+      lazyDefault: t.procedure
+        .meta({ openapi: { method: 'GET', path: '/lazy-default' } })
+        .input(z.object({ payload: z.lazy(() => z.string().default('hello')) }))
+        .output(z.null())
+        .query(() => null),
+    });
+
+    const openApiDocument = generateOpenApiDocument(appRouter, defaultDocOpts);
+    const params = openApiDocument.paths!['/lazy-default']!.get!.parameters as any[];
+    expect(params[0]!.required).toBeFalsy();
+  });
+
   test('with literal', () => {
     const appRouter = t.router({
       literal: t.procedure

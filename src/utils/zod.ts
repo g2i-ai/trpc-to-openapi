@@ -31,6 +31,13 @@ export const instanceofZodTypeLikeVoid = (type: $ZodType): type is ZodTypeLikeVo
   );
 };
 
+export const unwrapZodLazy = (type: $ZodType): $ZodType => {
+  if (instanceofZodTypeKind(type, 'lazy')) {
+    return unwrapZodLazy((type as z.ZodLazy<$ZodTypes>).def.getter());
+  }
+  return type;
+};
+
 export const unwrapZodType = (type: $ZodType, unwrapPreprocess: boolean): ZodType => {
   // TODO: Allow parsing array query params
   if (instanceofZodTypeKind(type, 'array')) {

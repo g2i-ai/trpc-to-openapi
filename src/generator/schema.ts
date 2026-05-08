@@ -21,6 +21,7 @@ import {
   instanceofZodTypeLikeString,
   instanceofZodTypeLikeVoid,
   instanceofZodTypeOptional,
+  unwrapZodLazy,
   unwrapZodType,
   zodSupportsCoerce,
 } from '../utils';
@@ -60,6 +61,8 @@ export const getParameterObjects = (
       let shapeSchema = shape[shapeKey]!;
       const isShapeRequired = !(shapeSchema as z.ZodType).safeParse(undefined).success;
       const isPathParameter = pathParameters.includes(shapeKey);
+
+      shapeSchema = unwrapZodLazy(shapeSchema) as typeof shapeSchema;
 
       if (!instanceofZodTypeLikeString(shapeSchema)) {
         if (zodSupportsCoerce) {
