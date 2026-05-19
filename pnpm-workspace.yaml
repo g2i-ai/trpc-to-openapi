@@ -7,5 +7,7 @@ packages:
   - examples/with-fastify
   - examples/with-nuxtjs
 
+minimumReleaseAge: 1440
+
 onlyBuiltDependencies:
   - esbuild
